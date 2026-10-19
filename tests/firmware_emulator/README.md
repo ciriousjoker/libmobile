@@ -20,8 +20,14 @@ Markdown, and JSON. Exit codes: **0** all pass, **1** contract/runtime failures,
 The tests exchange complete 8-bit game packets. `cpu.py` executes the original
 serial and command routines. EEPROM operations, phone status/disconnect, and
 socket calls are substituted; connected TCP/UDP cases explicitly seed an open
-connection. These tests do not validate the AT path, physical timings, 32-bit
-transfers, or the original network stack. The reported DDI AT dump corruption is
-unverified. Each HTML result lists the substitutions it actually used.
+connection. Each HTML result lists the substitutions it actually used.
+
+`--suite protocol` selects the shared game contracts. `--suite at --target firmware`
+selects internal AT diagnostics, with no firmware function substitutions. These
+also run a clearly labelled DDI candidate repair in memory (one bit at `0xC3D0`);
+the original files remain unchanged. libmobile has no internal AT parser.
+Neither suite validates physical timings, 32-bit transfers, or the original
+network stack. See `tests/reports/firmware_audit.md` for the bit audit and its limits.
+Reproduce its raw candidate scan with `python3 tests/firmware_emulator/audit.py`.
 
 Harness checks: `python3 -m unittest discover -s tests -p test_harness.py`.

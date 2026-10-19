@@ -10,6 +10,10 @@ def signed(value, bits):
     return value - (1 << bits) if value & 1 << bits - 1 else value
 
 
+class InstructionLimit(RuntimeError):
+    """Firmware did not return within the diagnostic execution budget."""
+
+
 class CPU:
 
     def __init__(self, rom):
@@ -255,7 +259,7 @@ class CPU:
             pc = target if target is not None else pc + 2
             count += 1
             if count > limit:
-                raise RuntimeError(f'Instruction limit at {pc:08x}')
+                raise InstructionLimit(f'Instruction limit at {pc:08x}')
         if self.r[15] != initial_sp:
             raise RuntimeError('unbalanced firmware stack')
         return self.r[0]

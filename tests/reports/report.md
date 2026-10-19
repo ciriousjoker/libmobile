@@ -1,6 +1,6 @@
 # Firmware conformance report
 
-Generated: 2026-10-19T16:10:28+02:00
+Generated: 2026-10-19T17:20:09+02:00
 
 Library source revision: `0704f56902f23b7ebf05c82c222e0e145e3140b6`.
 Library source SHA-256: `176802fa539488bc63ca1fb516601f99bcbadc7ea99665c89cdba4ac0a21f56b`.
@@ -9,20 +9,31 @@ Library source SHA-256: `176802fa539488bc63ca1fb516601f99bcbadc7ea99665c89cdba4a
 | --- | ---: | ---: | ---: | ---: |
 | DDI firmware | 75 | 0 | 0 | 0 |
 | DDI libmobile | 54 | 21 | 0 | 0 |
+| DDI AT original | 7 | 18 | 0 | 0 |
+| DDI AT candidate repair | 25 | 0 | 0 | 0 |
 | cdmaOne firmware | 75 | 0 | 0 | 0 |
 | cdmaOne libmobile | 53 | 22 | 0 | 0 |
+| cdmaOne AT original | 25 | 0 | 0 | 0 |
 
 ## Scope
 
-These are game-visible 8-bit protocol tests, not a complete adapter emulator.
+The protocol suite tests game-visible 8-bit exchanges, not a complete adapter emulator.
 Original firmware runs from seeded RAM, without executing its reset/boot path.
 It executes its serial parser, command dispatch, validation,
 response framing, and UDP connection bookkeeping. EEPROM driver operations,
 phone status/disconnect, and low-level socket calls are controlled substitutes.
-No AT interpreter, physical serial timing, original TCP/IP stack, or real network
-is exercised. Timer events are frozen: pending tests check that polling alone
-does not complete a request, not its physical duration. The reported DDI
-AT-path dump corruption remains unverified.
+Physical serial timing, the original TCP/IP stack, and a real network are not
+exercised. Timer events are frozen: pending tests check that polling alone
+does not complete a request, not its physical duration.
+The separate AT diagnostics execute the original command-body parser and handlers
+without firmware function substitutions. They inspect flags, settings, and cursor
+progress at an internal boundary, not game-visible response bytes or the complete
+phone transport. libmobile has no corresponding internal AT parser, so these
+cases are not run against the library. The DDI candidate target flips one bit
+in a private ROM copy at file offset 0xC3D0 (5EFF to 7EFF). Original-image results
+remain separate. The 10,000-instruction ceiling detects nonreturning cases; it
+is not a latency measurement. This repair is strongly supported, but the cause
+of the defective byte and the integrity of the whole dump remain unproven.
 The supplied Ghidra archive contains exactly the same bytes as these two dumps.
 Passing both images corroborates these selected paths, not the entire dump.
 Library-only runs use the recorded firmware contracts without requiring ROMs.
@@ -33,6 +44,9 @@ quirks; an ERROR is a harness/runtime problem. Neither is silently marked PASS.
 
 - `DDI_SST_39VF400_00-07FFFF.bin`: `3151a0b81177d94a4a186d0b5e3c6659279739f12ee77c5fc4b443a744199386`
 - `cdmaOne_SST_39VF400_00-07FFFF.bin`: `3f8eeed8afeb6509f27fb755b4e4d6f90c3579498a9529e3c9efe6ac752a8549`
+- DDI AT candidate, in memory only: `75191991d1c5886ce6470eff657f5ffb2204fa1cf5dddf87c52e41c2e3df5ef9`
+
+See [the firmware audit](firmware_audit.md) for candidate classifications and limits.
 
 ## Contract differences
 
@@ -220,6 +234,150 @@ Negative control: the peer must not echo a datagram addressed elsewhere.
 ```text
 Expected: ACK A5; A5: 00
 Received: ACK A5; EE: 25 01
+```
+
+### DDI AT original: command_chain_does_not_depend_on_caller_stack_word_sixteen
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: command_chain_does_not_depend_on_caller_stack_word_two
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: echo_does_not_depend_on_caller_stack_word_sixteen
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: echo_does_not_depend_on_caller_stack_word_two
+
+In the broken dump, 2 indexes the terminator and silently skips E0.
+
+```text
+1 != 3 : terminator was not consumed
+```
+
+### DDI AT original: echo_one_enables_echo
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: echo_without_number_defaults_to_zero
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: echo_zero_disables_echo
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: extended_results_accept_four
+
+X, rather than V, reaches cdmaOne's handler with range 0..4.
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: last_echo_command_wins
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: leading_zeroes_in_number_are_accepted
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: lowercase_command_disables_echo
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: quiet_one_preserves_existing_suppression
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: quiet_one_stages_result_suppression
+
+The parser stores 0x11; the outer transport handles its transition.
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: quiet_then_echo_updates_both_settings
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: quiet_zero_enables_results
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: spaces_between_commands_are_ignored
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: verbose_one_selects_text_results
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
+```
+
+### DDI AT original: verbose_zero_selects_numeric_results
+
+
+
+```text
+False is not true : AT parser exceeded 10,000 instructions
 ```
 
 ### cdmaOne libmobile: config_read_rejects_zero_size
@@ -571,6 +729,56 @@ Received: ACK A5; EE: 25 01
 | DDI libmobile | `udp_second_connection_keeps_its_own_endpoint` | FAIL |
 | DDI libmobile | `udp_send_to_other_endpoint_has_no_peer_echo` | FAIL |
 | DDI libmobile | `unknown_command_is_rejected_in_packet_ack` | PASS |
+| DDI AT original | `command_chain_does_not_depend_on_caller_stack_word_sixteen` | FAIL |
+| DDI AT original | `command_chain_does_not_depend_on_caller_stack_word_two` | FAIL |
+| DDI AT original | `echo_does_not_depend_on_caller_stack_word_sixteen` | FAIL |
+| DDI AT original | `echo_does_not_depend_on_caller_stack_word_two` | FAIL |
+| DDI AT original | `echo_one_enables_echo` | FAIL |
+| DDI AT original | `echo_outside_boolean_range_is_rejected_without_change` | PASS |
+| DDI AT original | `echo_without_number_defaults_to_zero` | FAIL |
+| DDI AT original | `echo_zero_disables_echo` | FAIL |
+| DDI AT original | `empty_body_succeeds` | PASS |
+| DDI AT original | `error_stops_later_commands` | PASS |
+| DDI AT original | `extended_results_accept_four` | FAIL |
+| DDI AT original | `extended_results_reject_five_without_change` | PASS |
+| DDI AT original | `last_echo_command_wins` | FAIL |
+| DDI AT original | `leading_zeroes_in_number_are_accepted` | FAIL |
+| DDI AT original | `lowercase_command_disables_echo` | FAIL |
+| DDI AT original | `quiet_one_preserves_existing_suppression` | FAIL |
+| DDI AT original | `quiet_one_stages_result_suppression` | FAIL |
+| DDI AT original | `quiet_then_echo_updates_both_settings` | FAIL |
+| DDI AT original | `quiet_two_is_rejected_without_change` | PASS |
+| DDI AT original | `quiet_zero_enables_results` | FAIL |
+| DDI AT original | `spaces_between_commands_are_ignored` | FAIL |
+| DDI AT original | `unknown_command_letter_is_rejected` | PASS |
+| DDI AT original | `verbose_one_selects_text_results` | FAIL |
+| DDI AT original | `verbose_two_is_rejected_without_change` | PASS |
+| DDI AT original | `verbose_zero_selects_numeric_results` | FAIL |
+| DDI AT candidate repair | `command_chain_does_not_depend_on_caller_stack_word_sixteen` | PASS |
+| DDI AT candidate repair | `command_chain_does_not_depend_on_caller_stack_word_two` | PASS |
+| DDI AT candidate repair | `echo_does_not_depend_on_caller_stack_word_sixteen` | PASS |
+| DDI AT candidate repair | `echo_does_not_depend_on_caller_stack_word_two` | PASS |
+| DDI AT candidate repair | `echo_one_enables_echo` | PASS |
+| DDI AT candidate repair | `echo_outside_boolean_range_is_rejected_without_change` | PASS |
+| DDI AT candidate repair | `echo_without_number_defaults_to_zero` | PASS |
+| DDI AT candidate repair | `echo_zero_disables_echo` | PASS |
+| DDI AT candidate repair | `empty_body_succeeds` | PASS |
+| DDI AT candidate repair | `error_stops_later_commands` | PASS |
+| DDI AT candidate repair | `extended_results_accept_four` | PASS |
+| DDI AT candidate repair | `extended_results_reject_five_without_change` | PASS |
+| DDI AT candidate repair | `last_echo_command_wins` | PASS |
+| DDI AT candidate repair | `leading_zeroes_in_number_are_accepted` | PASS |
+| DDI AT candidate repair | `lowercase_command_disables_echo` | PASS |
+| DDI AT candidate repair | `quiet_one_preserves_existing_suppression` | PASS |
+| DDI AT candidate repair | `quiet_one_stages_result_suppression` | PASS |
+| DDI AT candidate repair | `quiet_then_echo_updates_both_settings` | PASS |
+| DDI AT candidate repair | `quiet_two_is_rejected_without_change` | PASS |
+| DDI AT candidate repair | `quiet_zero_enables_results` | PASS |
+| DDI AT candidate repair | `spaces_between_commands_are_ignored` | PASS |
+| DDI AT candidate repair | `unknown_command_letter_is_rejected` | PASS |
+| DDI AT candidate repair | `verbose_one_selects_text_results` | PASS |
+| DDI AT candidate repair | `verbose_two_is_rejected_without_change` | PASS |
+| DDI AT candidate repair | `verbose_zero_selects_numeric_results` | PASS |
 | cdmaOne firmware | `alternate_official_client_id_is_accepted` | PASS |
 | cdmaOne firmware | `checksum_failure_is_reported_in_packet_ack` | PASS |
 | cdmaOne firmware | `config_read_first_byte` | PASS |
@@ -721,3 +929,28 @@ Received: ACK A5; EE: 25 01
 | cdmaOne libmobile | `udp_second_connection_keeps_its_own_endpoint` | FAIL |
 | cdmaOne libmobile | `udp_send_to_other_endpoint_has_no_peer_echo` | FAIL |
 | cdmaOne libmobile | `unknown_command_is_rejected_in_packet_ack` | PASS |
+| cdmaOne AT original | `command_chain_does_not_depend_on_caller_stack_word_sixteen` | PASS |
+| cdmaOne AT original | `command_chain_does_not_depend_on_caller_stack_word_two` | PASS |
+| cdmaOne AT original | `echo_does_not_depend_on_caller_stack_word_sixteen` | PASS |
+| cdmaOne AT original | `echo_does_not_depend_on_caller_stack_word_two` | PASS |
+| cdmaOne AT original | `echo_one_enables_echo` | PASS |
+| cdmaOne AT original | `echo_outside_boolean_range_is_rejected_without_change` | PASS |
+| cdmaOne AT original | `echo_without_number_defaults_to_zero` | PASS |
+| cdmaOne AT original | `echo_zero_disables_echo` | PASS |
+| cdmaOne AT original | `empty_body_succeeds` | PASS |
+| cdmaOne AT original | `error_stops_later_commands` | PASS |
+| cdmaOne AT original | `extended_results_accept_four` | PASS |
+| cdmaOne AT original | `extended_results_reject_five_without_change` | PASS |
+| cdmaOne AT original | `last_echo_command_wins` | PASS |
+| cdmaOne AT original | `leading_zeroes_in_number_are_accepted` | PASS |
+| cdmaOne AT original | `lowercase_command_disables_echo` | PASS |
+| cdmaOne AT original | `quiet_one_preserves_existing_suppression` | PASS |
+| cdmaOne AT original | `quiet_one_stages_result_suppression` | PASS |
+| cdmaOne AT original | `quiet_then_echo_updates_both_settings` | PASS |
+| cdmaOne AT original | `quiet_two_is_rejected_without_change` | PASS |
+| cdmaOne AT original | `quiet_zero_enables_results` | PASS |
+| cdmaOne AT original | `spaces_between_commands_are_ignored` | PASS |
+| cdmaOne AT original | `unknown_command_letter_is_rejected` | PASS |
+| cdmaOne AT original | `verbose_one_selects_text_results` | PASS |
+| cdmaOne AT original | `verbose_two_is_rejected_without_change` | PASS |
+| cdmaOne AT original | `verbose_zero_selects_numeric_results` | PASS |

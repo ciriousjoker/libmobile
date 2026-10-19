@@ -1,8 +1,8 @@
 """Original serial/command code with explicit EEPROM and network substitutes.
 
-Addresses are pinned to SHA-256-identified images. No firmware bytes or patched
-instructions are stored here. DDI's reported AT corruption is avoided: telephone
-status and network calls are supplied by the controlled test environment.
+Addresses are pinned to SHA-256-identified images. Game-protocol tests avoid
+DDI's defective AT parser: telephone status and network calls are supplied by
+the controlled test environment. Separate AT diagnostics execute that parser.
 """
 from dataclasses import dataclass
 from hashlib import sha256
@@ -111,7 +111,7 @@ class Firmware(Link):
         return result
 
     def internet(self):
-        """An established ISP connection, without running the uncertain AT path."""
+        """An established ISP connection, without executing the internal AT path."""
         self.cpu.write(self.profile.state, 2, 4)
         flag = 0x09007938 if self.profile.name == 'DDI' else 0x09020F84
         self.cpu.write(flag, 1, 4)
