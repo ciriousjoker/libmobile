@@ -54,6 +54,7 @@ void mobile_commands_init(struct mobile_adapter *adapter)
 {
     adapter->commands.session_started = false;
     adapter->commands.mode_32bit = false;
+    adapter->commands.test_mode = false;
 }
 
 static struct mobile_packet *error_packet(struct mobile_packet *packet, unsigned char error)
@@ -132,6 +133,7 @@ static void do_end_session(struct mobile_adapter *adapter)
 
     s->session_started = false;
     s->mode_32bit = false;
+    s->test_mode = false;
 }
 
 static void do_start_session(struct mobile_adapter *adapter)
@@ -1158,16 +1160,27 @@ static struct mobile_packet *command_dns_request(struct mobile_adapter *adapter,
 
 static struct mobile_packet *command_test_mode(struct mobile_adapter *adapter, struct mobile_packet *packet)
 {
-    // TODO: Command 0x3F FIRMWARE_VERSION never returns anything and locks
-    //         you out of all commands,
-    //         except 0x16 and 0x11 (blue adapter only).
-    //       Only accepted when disconnected from calls/the internet.
-    (void)adapter;
-    return error_packet(packet, 1);
+    struct mobile_adapter_commands *s = &adapter->commands;
+    if (!s->session_started || s->state != MOBILE_CONNECTION_DISCONNECTED) {
+        return error_packet(packet, 1);
+    }
+
+    // Both dumped firmwares ignore the payload and return an empty 0xBF.
+    // Version/checksum output and electrical tests use the phone connector,
+    // which libmobile does not expose. Never send them over the Game Link.
+    s->test_mode = true;
+    packet->length = 0;
+    return packet;
 }
 
 struct mobile_packet *mobile_commands_process(struct mobile_adapter *adapter, struct mobile_packet *packet)
 {
+    if (adapter->commands.test_mode && packet->command != MOBILE_COMMAND_REINIT &&
+            !(packet->command == MOBILE_COMMAND_END &&
+              adapter->serial.device == MOBILE_ADAPTER_BLUE)) {
+        return error_packet(packet, 1);
+    }
+
     switch (packet->command) {
     case MOBILE_COMMAND_START:
         return command_start(adapter, packet);

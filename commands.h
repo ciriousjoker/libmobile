@@ -61,6 +61,7 @@ struct mobile_buffer_commands {
 struct mobile_adapter_commands {
     _Atomic volatile bool session_started;
     _Atomic volatile bool mode_32bit;
+    bool test_mode;
 
     enum mobile_connection_state state;
     bool connections[MOBILE_MAX_CONNECTIONS];
